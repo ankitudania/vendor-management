@@ -115,16 +115,25 @@ const fetchNaicsDetails = async (naicsCode) => {
 
 const saveVendorDetails = async (vendorId, vendorName) => {
   try {
-    // Replace with your actual API endpoint
-    const response = await fetch("your-api-endpoint", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ vendorId, vendorName }),
+
+    const action = 'edit'
+    const control = 'vendor'
+    const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+
+    const requestOptions = {
+      method: "POST",
+      redirect: "follow",
+    };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      requestOptions,
+      mode: "no-cors",
+      body: JSON.stringify({ 'vendorid': vendorId, 'vendorname': vendorName, 'action': action, 'control': control }),
     });
-    const data = await response.json();
-    return data;
+
+    // const data = await response.json();
+    // return data;
   } catch (error) {
     throw new Error("Failed to save vendor details");
   }
@@ -132,18 +141,27 @@ const saveVendorDetails = async (vendorId, vendorName) => {
 
 const saveNaicsCodeDetails = async (NaicsCode, naicsDescription) => {
   try {
-    // Replace with your actual API endpoint
-    const response = await fetch("your-api-endpoint", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ NaicsCode, naicsDescription }),
+
+    const action = 'edit'
+    const control = 'naics'
+    const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+
+    const requestOptions = {
+      method: "POST",
+      redirect: "follow",
+    };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      requestOptions,
+      mode: "no-cors",
+      body: JSON.stringify({ 'naicscode': NaicsCode, 'naicsdescription': naicsDescription, 'action': action, 'control': control }),
     });
-    const data = await response.json();
-    return data;
+
+    // const data = await response.json();
+    // return data;
   } catch (error) {
-    throw new Error("Failed to save naics details");
+    throw new Error("Failed to save vendor details");
   }
 };
 
@@ -456,6 +474,7 @@ const VendorDataGrid = () => {
   // Handler for vendor details save
   const handleVendorDetailsSave = async () => {
     try {
+      
       await saveVendorDetails(
         vendorDetailsForm.vendor_id,
         vendorDetailsForm.vendor_name
@@ -501,8 +520,8 @@ const VendorDataGrid = () => {
       // Placeholder function for saving NAICS code
       // API call
       await saveNaicsCodeDetails(
-        vendorDetailsForm.vendor_id,
-        vendorDetailsForm.vendor_name
+        naicsCodeForm.naics_code,
+        naicsCodeForm.naics_description
       );
 
       console.log("NAICS details saved");
@@ -723,18 +742,33 @@ const VendorDataGrid = () => {
     try {
       // Only check for existing vendor if not from file
       if (!isFromFile) {
-        const vendorExists = await checkVendorExists(dataToProcess.vendorId);
-        if (vendorExists) {
-          setNotification({
-            type: "error",
-            message: "Vendor ID already exists",
-          });
-          return;
-        }
-        else {
-          // Add new vendor logic
-          console.log("Saving vendor:", dataToProcess);
-        }
+        const action = 'add'
+        const control = 'vendor'
+        const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+
+        const requestOptions = {
+          method: "POST",
+          redirect: "follow",
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          requestOptions,
+          mode: "no-cors",
+          body: JSON.stringify({ 'vendorid': dataToProcess.vendorId, 'vendorname': dataToProcess.vendorName, 'action': action, 'control': control }),
+        });
+        // const vendorExists = await checkVendorExists(dataToProcess.vendorId);
+        // if (vendorExists) {
+        //   setNotification({
+        //     type: "error",
+        //     message: "Vendor ID already exists",
+        //   });
+        //   return;
+        // }
+        // else {
+        //   // Add new vendor logic
+        //   console.log("Saving vendor:", dataToProcess);
+        // }
       }
 
 
@@ -765,6 +799,7 @@ const VendorDataGrid = () => {
   const handleNewNaicsSave = async (naicsData = null, isFromFile = false) => {
     const dataToProcess = naicsData || newNaicsForm;
 
+    // Validate inputs if not from file
     if (!isFromFile && (!dataToProcess.naicsCode || !dataToProcess.naicsDescription)) {
       setNotification({
         type: "error",
@@ -774,7 +809,36 @@ const VendorDataGrid = () => {
     }
 
     try {
-      console.log("Saving NAICS:", dataToProcess);
+      // Only check for existing naics if not from file
+      if (!isFromFile) {
+        const action = 'add'
+        const control = 'naics'
+        const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+
+        const requestOptions = {
+          method: "POST",
+          redirect: "follow",
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          requestOptions,
+          mode: "no-cors",
+          body: JSON.stringify({ 'naicscode': dataToProcess.naicsCode, 'naicsdescription': dataToProcess.naicsDescription, 'action': action, 'control': control }),
+        });
+        // const vendorExists = await checkVendorExists(dataToProcess.vendorId);
+        // if (vendorExists) {
+        //   setNotification({
+        //     type: "error",
+        //     message: "Vendor ID already exists",
+        //   });
+        //   return;
+        // }
+        // else {
+        //   // Add new vendor logic
+        //   console.log("Saving vendor:", dataToProcess);
+        // }
+      }
 
       if (!isFromFile) {
         setNotification({
@@ -787,7 +851,8 @@ const VendorDataGrid = () => {
 
       const vendorData = await fetchVendorData();
       setVendors(vendorData);
-    } catch (error) {
+    }
+    catch (error) {
       if (!isFromFile) {
         setNotification({
           type: "error",
@@ -1159,7 +1224,7 @@ const VendorDataGrid = () => {
                 }
                 disabled={isVendorNameLocked}
                 className={`w-full px-3 py-2 border rounded-md ${isVendorNameLocked ? "bg-gray-100" : "bg-white"
-                }`}
+                  }`}
                 placeholder="Vendor Name"
               />
             </div>
