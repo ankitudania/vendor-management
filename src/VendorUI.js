@@ -89,31 +89,68 @@ const addVendorData = async (newVendorData) => {
   }
 };
 
+//Get vendor details for search
 const fetchVendorDetails = async (vendorId) => {
   try {
-    // Replace with your actual API endpoint
-    // const response = await fetch(`your-api-endpoint/${vendorId}`);
-    // const data = await response.json();
-    // return data;
-    return "1010101";
+
+    const action = 'find'
+    const control = 'vendor'
+    const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+
+    const requestOptions = {
+      method: "POST",
+      redirect: "follow",
+    };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      requestOptions,
+      body: JSON.stringify({ 'vendorid': vendorId, 'action': action, 'control': control }),
+    });
+
+    const data = await response.json();
+    if (!data) {
+      return false;
+    }
+    return data;
+
   } catch (error) {
-    throw new Error("Failed to fetch vendor details");
+    console.log(error)
+    // throw new Error("Failed to fetch vendor details");
   }
 };
 
+//Get Naics details for search
 const fetchNaicsDetails = async (naicsCode) => {
   try {
-    // Replace with your actual API endpoint
-    // const response = await fetch(`your-api-endpoint/${vendorId}`);
-    // const data = await response.json();
-    // return data;
-    return "1010101";
+    const action = 'find'
+    const control = 'naics'
+    const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+
+    const requestOptions = {
+      method: "POST",
+      redirect: "follow",
+    };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      requestOptions,
+      body: JSON.stringify({ 'naicscode': naicsCode, 'action': action, 'control': control }),
+    });
+
+    const data = await response.json();
+    if (!data) {
+      return false;
+    }
+    return data;
+
   } catch (error) {
     throw new Error("Failed to fetch vendor details");
   }
 };
 
-const saveVendorDetails = async (vendorId, vendorName) => {
+//API call for edit Vendor data
+const editVendorDetails = async (vendorId, vendorName) => {
   try {
 
     const action = 'edit'
@@ -131,17 +168,16 @@ const saveVendorDetails = async (vendorId, vendorName) => {
       mode: "no-cors",
       body: JSON.stringify({ 'vendorid': vendorId, 'vendorname': vendorName, 'action': action, 'control': control }),
     });
+  }
 
-    // const data = await response.json();
-    // return data;
-  } catch (error) {
-    throw new Error("Failed to save vendor details");
+  catch (error) {
+    throw new Error("Failed to save Vendor details");
   }
 };
 
-const saveNaicsCodeDetails = async (NaicsCode, naicsDescription) => {
+//API call for edit NAICS data
+const editNaicsCodeDetails = async (NaicsCode, naicsDescription) => {
   try {
-
     const action = 'edit'
     const control = 'naics'
     const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
@@ -158,18 +194,16 @@ const saveNaicsCodeDetails = async (NaicsCode, naicsDescription) => {
       body: JSON.stringify({ 'naicscode': NaicsCode, 'naicsdescription': naicsDescription, 'action': action, 'control': control }),
     });
 
-    // const data = await response.json();
-    // return data;
-  } catch (error) {
-    throw new Error("Failed to save vendor details");
+  }
+  catch (error) {
+    throw new Error("Failed to save Naics details");
   }
 };
-
 
 //Notification component
 const Notification = ({ type, message, onClose }) => {
   useEffect(() => {
-    const timer = setTimeout(onClose, 7000);
+    const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
@@ -191,7 +225,7 @@ const Notification = ({ type, message, onClose }) => {
 };
 
 const VendorDataGrid = () => {
-  const [vendors, setVendors] = useState([]);
+  const [vendorsDashboard, setVendorsDashboard] = useState([]);
   const [filters, setFilters] = useState({
     vendor_id: "",
     pay_vendor_name: "",
@@ -209,6 +243,8 @@ const VendorDataGrid = () => {
     naics_code_description: "",
     naics_priority: "",
   });
+
+  //Filter Dashboard
   const [vendorSearched, setVendorSearched] = useState(false);
   const [naicsSearched, setNaicsSearched] = useState(false);
 
@@ -255,7 +291,7 @@ const VendorDataGrid = () => {
 
   // Function to handle opening NAICS priority modal
   const handleNaicsPriorityClick = (vendor) => {
-    const vendorRecords = vendors.filter(
+    const vendorRecords = vendorsDashboard.filter(
       (v) => v.vendor_id === vendor.vendor_id
     );
     setSelectedVendorData(vendor);
@@ -315,7 +351,7 @@ const VendorDataGrid = () => {
 
       // Refresh the main vendor list
       const updatedVendorData = await fetchVendorData();
-      setVendors(updatedVendorData);
+      setVendorsDashboard(updatedVendorData);
 
       setNotification({
         type: "success",
@@ -400,14 +436,23 @@ const VendorDataGrid = () => {
 
     try {
       const vendorData = await fetchVendorDetails(vendorDetailsForm.vendor_id);
-      setVendorDetailsForm((prev) => ({
-        ...prev,
-        // vendor_name: vendorData.vendor_name
-        vendor_name: "Vendor name",
-      }));
-      setIsVendorIdLocked(true);
-      setIsVendorNameLocked(false);
-    } catch (error) {
+      if (!vendorData) {
+        setNotification({
+          type: "error",
+          message: "Vendor not found",
+        });
+      }
+      else {
+        setVendorDetailsForm((prev) => ({
+          ...prev,
+          vendor_name: vendorData
+        }));
+        setIsVendorIdLocked(true);
+        setIsVendorNameLocked(false);
+      }
+    }
+
+    catch (error) {
       setNotification({
         type: "error",
         message: "Failed to fetch vendor details",
@@ -427,14 +472,23 @@ const VendorDataGrid = () => {
 
     try {
       const naicsData = await fetchNaicsDetails(naicsCodeForm.naics_code);
-      setNaicsCodeForm((prev) => ({
-        ...prev,
-        // naics_description: naicsData.naics_description
-        naics_description: "Naics Code Description",
-      }));
-      setIsNaicsCodeLocked(true);
-      setIsNaicsDescriptionLocked(false);
-    } catch (error) {
+      if (!naicsData) {
+        setNotification({
+          type: "error",
+          message: "NAICS data not found",
+        });
+      }
+      else {
+        setNaicsCodeForm((prev) => ({
+          ...prev,
+          naics_description: naicsData,
+        }));
+        setIsNaicsCodeLocked(true);
+        setIsNaicsDescriptionLocked(false);
+      }
+    }
+
+    catch (error) {
       setNotification({
         type: "error",
         message: "Failed to fetch Naics Code",
@@ -457,7 +511,7 @@ const VendorDataGrid = () => {
         // Clear sessionStorage
         sessionStorage.removeItem("vendorData");
         const vendorData = await fetchVendorData();
-        setVendors(vendorData);
+        setVendorsDashboard(vendorData);
       } catch (error) {
         console.error("Failed to fetch vendor data:", error);
       }
@@ -474,8 +528,8 @@ const VendorDataGrid = () => {
   // Handler for vendor details save
   const handleVendorDetailsSave = async () => {
     try {
-      
-      await saveVendorDetails(
+
+      await editVendorDetails(
         vendorDetailsForm.vendor_id,
         vendorDetailsForm.vendor_name
       );
@@ -487,14 +541,17 @@ const VendorDataGrid = () => {
 
       // Refresh the dashboard
       const vendorData = await fetchVendorData();
-      setVendors(vendorData);
+      setVendorsDashboard(vendorData);
 
       // Reset form and close modal
       setVendorDetailsForm({ vendor_id: "", vendor_name: "" });
       setIsVendorIdLocked(false);
       setIsVendorNameLocked(false);
       setIsEditingVendorDetails(false);
-    } catch (error) {
+
+    }
+
+    catch (error) {
       setNotification({
         type: "error",
         message: "Failed to update vendor details",
@@ -502,7 +559,7 @@ const VendorDataGrid = () => {
     }
   };
 
-  // Handler for vendor detailsedit modal close
+  // Handler for vendor details edit modal close
   const handleCloseVendorDetailsModal = () => {
     setVendorDetailsForm({ vendor_id: "", vendor_name: "" });
     setIsVendorIdLocked(false);
@@ -517,9 +574,8 @@ const VendorDataGrid = () => {
 
   const handleNaicsCodeSave = async () => {
     try {
-      // Placeholder function for saving NAICS code
-      // API call
-      await saveNaicsCodeDetails(
+
+      await editNaicsCodeDetails(
         naicsCodeForm.naics_code,
         naicsCodeForm.naics_description
       );
@@ -533,10 +589,16 @@ const VendorDataGrid = () => {
 
       // Refresh the dashboard
       const vendorData = await fetchVendorData();
-      setVendors(vendorData);
+      setVendorsDashboard(vendorData);
 
+      // Reset form and close modal
+      setNaicsCodeForm({ naics_code: "", naics_description: "" });
+      setIsNaicsCodeLocked(false);
+      setIsNaicsDescriptionLocked(false);
       setIsEditingNaicsCode(false);
-    } catch (error) {
+
+    }
+    catch (error) {
       setNotification({
         type: "error",
         message: "Failed to update NAICS details",
@@ -561,7 +623,7 @@ const VendorDataGrid = () => {
   };
 
   // Apply filters to data
-  const filteredVendors = vendors.filter((vendor) => {
+  const filteredVendors = vendorsDashboard.filter((vendor) => {
     return Object.keys(filters).every((key) => {
       // If filter is empty, include the vendor
       if (filters[key] === "") return true;
@@ -635,10 +697,20 @@ const VendorDataGrid = () => {
             };
 
             try {
-              // Try to save vendor, ignore if exists
-              await handleNewVendorSave(vendorData, true);
-            } catch (error) {
-              console.log(`Skipping duplicate vendor: ${vendorData.vendorId}`);
+              const response = await handleNewVendorSave(vendorData, true);
+              if (!response) {
+                setNotification({
+                  type: "warning",
+                  message: `Skipping duplicate vendor: ${vendorData.vendorId}`,
+                });
+                continue;
+              }
+            }
+            catch (error) {
+              setNotification({
+                type: "warning",
+                message: `Skipping invalid vendor: ${vendorData.vendorId}`,
+              });
               continue;
             }
           }
@@ -646,16 +718,27 @@ const VendorDataGrid = () => {
           // Process NAICS data
           if (columns.length >= 2) {
             const naicsData = {
-              vendorId: columns[0].trim(),
-              naicsCode: columns[1].trim(),
+              naicsCode: columns[0].trim(),
+              naicsDescription: columns[1].trim(),
             };
 
             try {
-              await handleNewNaicsSave(naicsData, true);
-            } catch (error) {
-              console.log(
-                `Skipping invalid NAICS entry for vendor: ${naicsData.vendorId}`
-              );
+              const response = await handleNewNaicsSave(naicsData, true);
+              if (!response) {
+                setNotification({
+                  type: "warning",
+                  message: `Skipping duplicate NAICS: ${naicsData.naicsCode}`,
+                });
+                console.log(`Skipping duplicate NAICS: ${naicsData.naicsCode}`);
+                continue;
+              }
+            }
+            catch (error) {
+              setNotification({
+                type: "warning",
+                message: `Skipping invalid NAICS entry for: ${naicsData.naicsCode}`,
+              });
+              console.log(`Skipping invalid NAICS entry for : ${naicsData.vendorId}`);
               continue;
             }
           }
@@ -688,7 +771,7 @@ const VendorDataGrid = () => {
       if (result === "success") {
         setIsAddingVendor(false);
         // Add new vendor to the list
-        setVendors((prevVendors) => [...prevVendors, newVendor]);
+        setVendorsDashboard((prevVendors) => [...prevVendors, newVendor]);
 
         // Show success notification
         setNotification({
@@ -723,7 +806,7 @@ const VendorDataGrid = () => {
   // Function to check if vendor exists
   const checkVendorExists = async (vendorId) => {
     // Placeholder function - replace with actual API call
-    return vendors.some((vendor) => vendor.vendor_id === vendorId);
+    return vendorsDashboard.some((vendor) => vendor.vendor_id === vendorId);
   };
 
   // Handler for new vendor save
@@ -737,6 +820,28 @@ const VendorDataGrid = () => {
         message: "Please fill in all fields",
       });
       return;
+    }
+
+    if (isFromFile) {
+      const action = 'add'
+      const control = 'vendor'
+      const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+      const requestOptions = {
+        method: "POST",
+        redirect: "follow",
+      };
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        requestOptions,
+        body: JSON.stringify({ 'vendorid': dataToProcess.vendorId, 'vendorname': dataToProcess.vendorName, 'action': action, 'control': control }),
+      });
+      const data = await response.json();
+      if (!data) {
+        return false;
+      }
+      else {
+        return true;
+      }
     }
 
     try {
@@ -754,37 +859,30 @@ const VendorDataGrid = () => {
         const response = await fetch(apiUrl, {
           method: "POST",
           requestOptions,
-          mode: "no-cors",
           body: JSON.stringify({ 'vendorid': dataToProcess.vendorId, 'vendorname': dataToProcess.vendorName, 'action': action, 'control': control }),
         });
-        // const vendorExists = await checkVendorExists(dataToProcess.vendorId);
-        // if (vendorExists) {
-        //   setNotification({
-        //     type: "error",
-        //     message: "Vendor ID already exists",
-        //   });
-        //   return;
-        // }
-        // else {
-        //   // Add new vendor logic
-        //   console.log("Saving vendor:", dataToProcess);
-        // }
+
+        const data = await response.json();
+        if (data) {
+          setNotification({
+            type: "success",
+            message: "New vendor added successfully",
+          });
+          setNewVendorForm({ vendorId: "", vendorName: "" });
+          setIsAddingNewVendor(false);
+        }
+        else {
+          setNotification({
+            type: "error",
+            message: "Vendor ID already exists",
+          });
+        }
       }
-
-
-      if (!isFromFile) {
-        setNotification({
-          type: "success",
-          message: "New vendor added successfully",
-        });
-        setNewVendorForm({ vendorId: "", vendorName: "" });
-        setIsAddingNewVendor(false);
-      }
-
-      // Refresh vendor data
-      const vendorData = await fetchVendorData();
-      setVendors(vendorData);
-    } catch (error) {
+      // // Refresh vendor grid
+      // const vendorData = await fetchVendorData();
+      // setVendors(vendorData);
+    }
+    catch (error) {
       if (!isFromFile) {
         setNotification({
           type: "error",
@@ -808,6 +906,28 @@ const VendorDataGrid = () => {
       return;
     }
 
+    if (isFromFile) {
+      const action = 'add'
+      const control = 'naics'
+      const apiUrl = "https://ap5vywmhh5.execute-api.us-east-1.amazonaws.com/V1/";
+      const requestOptions = {
+        method: "POST",
+        redirect: "follow",
+      };
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        requestOptions,
+        body: JSON.stringify({ 'naicscode': dataToProcess.naicsCode, 'naicsdescription': dataToProcess.naicsDescription, 'action': action, 'control': control }),
+      });
+      const data = await response.json();
+      if (!data) {
+        return false;
+      }
+      else {
+        return true;
+      }
+    }
+
     try {
       // Only check for existing naics if not from file
       if (!isFromFile) {
@@ -823,34 +943,29 @@ const VendorDataGrid = () => {
         const response = await fetch(apiUrl, {
           method: "POST",
           requestOptions,
-          mode: "no-cors",
           body: JSON.stringify({ 'naicscode': dataToProcess.naicsCode, 'naicsdescription': dataToProcess.naicsDescription, 'action': action, 'control': control }),
         });
-        // const vendorExists = await checkVendorExists(dataToProcess.vendorId);
-        // if (vendorExists) {
-        //   setNotification({
-        //     type: "error",
-        //     message: "Vendor ID already exists",
-        //   });
-        //   return;
-        // }
-        // else {
-        //   // Add new vendor logic
-        //   console.log("Saving vendor:", dataToProcess);
-        // }
-      }
 
-      if (!isFromFile) {
-        setNotification({
-          type: "success",
-          message: "New NAICS code added successfully",
-        });
-        setNewNaicsForm({ naicsCode: "", naicsDescription: "" });
-        setIsAddingNewNaics(false);
-      }
+        const data = await response.json();
+        if (data) {
+          setNotification({
+            type: "success",
+            message: "New NAICS code added successfully",
+          });
+          setNewNaicsForm({ naicsCode: "", naicsDescription: "" });
+          setIsAddingNewNaics(false);
+        }
+        else {
+          setNotification({
+            type: "error",
+            message: "NAICS code already exists",
+          });
+        }
 
-      const vendorData = await fetchVendorData();
-      setVendors(vendorData);
+      }
+      // Refresh vendor grid
+      // const vendorData = await fetchVendorData();
+      // setVendors(vendorData);
     }
     catch (error) {
       if (!isFromFile) {
@@ -1253,7 +1368,7 @@ const VendorDataGrid = () => {
       {isEditingNaicsCode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">Edit NAICS Code</h2>
+            <h2 className="text-xl font-bold mb-4">Edit NAICS Details</h2>
             <div className="space-y-4">
               <div className="flex space-x-2">
                 <input
@@ -1461,7 +1576,7 @@ const VendorDataGrid = () => {
         </div>
         <div className="p-4 bg-gray-50 text-right">
           <span className="text-gray-600 text-sm">
-            Total Records: {filteredVendors.length} / {vendors.length}
+            Total Records: {filteredVendors.length} / {vendorsDashboard.length}
           </span>
         </div>
       </div>
