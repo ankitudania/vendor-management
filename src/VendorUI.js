@@ -236,13 +236,14 @@ const VendorDataGrid = () => {
 
   // Add modal state
   const [isAddingVendor, setIsAddingVendor] = useState(false);
-  const [newVendor, setNewVendor] = useState({
+  const [vendornaicsCombo, setVendorNaicsCombo] = useState({
     vendor_id: "",
     pay_vendor_name: "",
     naics_code: "",
     naics_code_description: "",
     naics_priority: "",
   });
+  
 
   //Filter Dashboard
   const [vendorSearched, setVendorSearched] = useState(false);
@@ -367,15 +368,19 @@ const VendorDataGrid = () => {
   };
 
   // Function to fetch vendor details by ID
-  const searchVendorById = async (vendorId) => {
+  const vendorNameSearchforNaics = async (vendorId) => {
     try {
-      // const response = await fetchVendorDetails(vendorId);
-      const response = true;
-      if (response) {
-        setNewVendor((prev) => ({
+      const vendorName = await fetchVendorDetails(vendorId);
+      if (!vendorName) {
+        setNotification({
+          type: "error",
+          message: "Vendor not found",
+        });
+      }
+      else{
+        setVendorNaicsCombo((prev) => ({
           ...prev,
-          // pay_vendor_name: response.vendor_name, // Assuming the API returns vendor_name
-          pay_vendor_name: 'new vendor', // Assuming the API returns vendor_name
+          pay_vendor_name: vendorName,
         }));
         setVendorSearched(true);
         setNotification({
@@ -388,7 +393,7 @@ const VendorDataGrid = () => {
         type: "error",
         message: "Vendor not found",
       });
-      setNewVendor((prev) => ({
+      setVendorNaicsCombo((prev) => ({
         ...prev,
         pay_vendor_name: "",
       }));
@@ -397,26 +402,32 @@ const VendorDataGrid = () => {
   };
 
   // Function to fetch NAICS description
-  const searchNaicsCode = async (naicsCode) => {
+  const naicsdescSearchforVendor = async (naicsCode) => {
     try {
-      // Replace with your actual NAICS lookup API
-      // const response = await fetch(`your-naics-api/${naicsCode}`);
-      // const data = await response.json();
-      const data = true
-      if (data) {
-        setNewVendor((prev) => ({
+      const naicsDescription = await fetchNaicsDetails(naicsCode);
+      if(!naicsDescription){
+        setNotification({
+          type: "error",
+          message: "NAICS details not found",
+        });
+      }
+      else{
+        setVendorNaicsCombo((prev) => ({
           ...prev,
-          // naics_code_description: data.description,
-          naics_code_description: 'New Naics code',
+          naics_code_description: naicsDescription,
         }));
         setNaicsSearched(true);
+        setNotification({
+          type: "success",
+          message: "NAICS details found",
+        });
       }
     } catch (error) {
       setNotification({
         type: "error",
         message: "Invalid NAICS code",
       });
-      setNewVendor((prev) => ({
+      setVendorNaicsCombo((prev) => ({
         ...prev,
         naics_code_description: "",
       }));
@@ -641,7 +652,7 @@ const VendorDataGrid = () => {
   // Open add modal
   const handleAddClick = () => {
     setIsAddingVendor(true);
-    setNewVendor({
+    setVendorNaicsCombo({
       vendor_id: "",
       pay_vendor_name: "",
       naics_code: "",
@@ -655,20 +666,20 @@ const VendorDataGrid = () => {
     const { name, value } = e.target;
     if (name === "vendor_id") {
       setVendorSearched(false);
-      setNewVendor((prev) => ({
+      setVendorNaicsCombo((prev) => ({
         ...prev,
         [name]: value,
         pay_vendor_name: "",
       }));
     } else if (name === "naics_code") {
       setNaicsSearched(false);
-      setNewVendor((prev) => ({
+      setVendorNaicsCombo((prev) => ({
         ...prev,
         [name]: value,
         naics_code_description: "",
       }));
     } else {
-      setNewVendor((prev) => ({
+      setVendorNaicsCombo((prev) => ({
         ...prev,
         [name]: value,
       }));
@@ -766,12 +777,12 @@ const VendorDataGrid = () => {
   // Save new vendor
   const handleSaveNewVendor = async () => {
     try {
-      const result = await addVendorData(newVendor);
+      const result = await addVendorData(vendornaicsCombo);
 
       if (result === "success") {
         setIsAddingVendor(false);
         // Add new vendor to the list
-        setVendorsDashboard((prevVendors) => [...prevVendors, newVendor]);
+        setVendorsDashboard((prevVendors) => [...prevVendors, vendornaicsCombo]);
 
         // Show success notification
         setNotification({
@@ -989,15 +1000,15 @@ const VendorDataGrid = () => {
           <div className="flex space-x-2">
             <input
               name="vendor_id"
-              value={newVendor.vendor_id}
+              value={vendornaicsCombo.vendor_id}
               onChange={handleAddChange}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="Vendor ID (required)"
             />
             <button
-              onClick={() => searchVendorById(newVendor.vendor_id)}
+              onClick={() => vendorNameSearchforNaics(vendornaicsCombo.vendor_id)}
               className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              disabled={!newVendor.vendor_id}
+              disabled={!vendornaicsCombo.vendor_id}
             >
               <Search size={20} />
             </button>
@@ -1006,7 +1017,7 @@ const VendorDataGrid = () => {
           {/* Vendor Name (read-only) */}
           <input
             name="pay_vendor_name"
-            value={newVendor.pay_vendor_name}
+            value={vendornaicsCombo.pay_vendor_name}
             readOnly
             className="w-full px-3 py-2 border rounded-md bg-gray-100"
             placeholder="Vendor Name (auto-filled)"
@@ -1016,16 +1027,16 @@ const VendorDataGrid = () => {
           <div className="flex space-x-2">
             <input
               name="naics_code"
-              value={newVendor.naics_code}
+              value={vendornaicsCombo.naics_code}
               onChange={handleAddChange}
               className="w-full px-3 py-2 border rounded-md"
               placeholder="NAICS Code (required)"
               disabled={!vendorSearched}
             />
             <button
-              onClick={() => searchNaicsCode(newVendor.naics_code)}
+              onClick={() => naicsdescSearchforVendor(vendornaicsCombo.naics_code)}
               className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              disabled={!vendorSearched || !newVendor.naics_code}
+              disabled={!vendorSearched || !vendornaicsCombo.naics_code}
             >
               <Search size={20} />
             </button>
@@ -1034,7 +1045,7 @@ const VendorDataGrid = () => {
           {/* NAICS Description (read-only) */}
           <input
             name="naics_code_description"
-            value={newVendor.naics_code_description}
+            value={vendornaicsCombo.naics_code_description}
             readOnly
             className="w-full px-3 py-2 border rounded-md bg-gray-100"
             placeholder="NAICS Description (auto-filled)"
@@ -1044,11 +1055,12 @@ const VendorDataGrid = () => {
           <input
             name="naics_priority"
             type="number"
-            value={newVendor.naics_priority}
+            value={vendornaicsCombo.naics_priority}
             onChange={handleAddChange}
             className="w-full px-3 py-2 border rounded-md"
             placeholder="NAICS Priority (optional)"
             disabled={!naicsSearched}
+            hidden
           />
         </div>
 
